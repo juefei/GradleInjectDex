@@ -1,0 +1,39 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    compileOnly "com.android.tools.build:gradle-api:2.2.3"
+    compileOnly "com.android.tools.build:gradle:2.2.3"
+
+    compile 'org.ow2.asm:asm:5.0.3'
+    compile 'org.ow2.asm:asm-commons:5.0.3'
+}
+
+repositories {
+    jcenter()
+
+    maven { url 'http://mvnrepo.xxxx.com/mvn/repository' }
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+    mavenLocal()
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            pom.project {
+                name = 'Android Gradle Plugin'
+                packaging = 'jar'
+            }
+            pom.groupId = 'com.android.gradle.plugin'
+            pom.artifactId = 'tasktime'
+            pom.version = '1.10.9.154-SNAPSHOT'
+            if(pom.version.toLowerCase().contains('snapshot')) {
+                repository(url: 'http://mvnrepo.xxxx.com/nexus/content/repositories/snapshots/') {
+                    authentication(userName: 'xxxx', password: 'xxxx')
+                }
+            }
+        }
+    }
+}
