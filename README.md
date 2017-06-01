@@ -10,9 +10,9 @@ gradle打包插件用于字节码插桩
 
 gradle-plugin工程是用groovy语言开发的gradle插件，包括gradle插件标准工程结构，以及如何打包发布到maven仓库。<br />
 本插件工程包括两个插件：<br />
-1.统计每个tasks执行时间；<br />
-2.统计应用内每个方法执行耗时。
-
+&emsp;&emsp;<font color=#ff0000>1.统计每个tasks执行时间。</font><br />
+&emsp;&emsp;<font color=#ff0000>2.统计应用内每个方法执行耗时。</font><br />
+&emsp;&emsp;<font color=#ff0000>3.借助ASM自动生成插桩代码。</font>
 
 * app工程
 
