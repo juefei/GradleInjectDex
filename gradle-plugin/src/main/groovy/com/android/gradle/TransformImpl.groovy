@@ -11,9 +11,11 @@ class TransformImpl extends Transform {
 
     private Project project;
 
+    private DexProcessor dexProcessor;
+
     public TransformImpl(Project project) {
         this.project = project;
-        DexProcessor.transformExt = project.tranformConfig;
+        dexProcessor = new DexProcessor(project.tranformConfig.dexConfig);
     }
 
     @Override
@@ -84,13 +86,13 @@ class TransformImpl extends Transform {
 
                 //处理jar进行字节码注入处理 TODO
                 logger.error("process jar = " + jarInput.file.absolutePath);
-                if(DexProcessor.shouldprocessJar(jarInput.file.absolutePath)) {
+                if(dexProcessor.shouldprocessJar(jarInput.file.absolutePath)) {
                     File tmpDest = new File(jarInput.file.parentFile, jarInput.file.name + ".tmp");
                     if(tmpDest.exists()) {
                         tmpDest.delete();
                     }
                     tmpDest.createNewFile();
-                    DexProcessor.processJar(jarInput.file, tmpDest);
+                    dexProcessor.processJar(jarInput.file, tmpDest);
                     FileUtil.copyFile(tmpDest, dest,true);
                 } else {
                     logger.error("ignore process jar = " + jarInput.file.absolutePath);
@@ -102,14 +104,14 @@ class TransformImpl extends Transform {
 
     private void processDirectory(File sourceDir, File destDir) {
 
-        DexProcessor.prepareClass(destDir);
+        dexProcessor.prepareClass(destDir);
 
         sourceDir.traverse { inputFile ->
             if (!inputFile.isDirectory()) {
                 String relativePath = FileUtil.relativize(sourceDir, inputFile)
                 File outputFile = new File(destDir, relativePath)
-                if(DexProcessor.shouldprocessClass(relativePath)) {
-                    def bytes = DexProcessor.processClass(inputFile, relativePath)
+                if(dexProcessor.shouldprocessClass(relativePath)) {
+                    def bytes = dexProcessor.processClass(inputFile, relativePath)
                     FileUtil.copyBytesToFile(bytes, outputFile)
                 } else {
                     logger.error("ignore process classFile = " + inputFile.absolutePath)

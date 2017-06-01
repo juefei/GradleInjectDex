@@ -14,7 +14,7 @@ buildscript {
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
-        classpath 'com.android.gradle.plugin:tasktime:1.10.9.154-SNAPSHOT'
+        classpath 'com.android.gradle.plugin:tasktime:1.10.9.189-SNAPSHOT'
     }
 
 }
@@ -24,8 +24,14 @@ apply plugin: 'plugin.transform'
 
 tranformConfig {
     debugMode = true
-    excludeClasses = ["com/android/test/TestBuild.class", "xxx.class"]
-    excludeJars = ["com.android.support:appcompat-v7"]  // groupbyId:artifactId
+
+    dexConfig {
+        thresholdInMainThread = 20
+        thresholdInOtherThread = 600
+        excludeClasses = ["com/android/test/TestBuild.class", "xxx.class"]
+        excludeJars = ["com.android.support:appcompat-v7"]  // groupbyId:artifactId
+    }
+
 }
 
 

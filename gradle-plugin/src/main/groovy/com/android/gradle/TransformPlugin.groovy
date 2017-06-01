@@ -1,11 +1,9 @@
 package com.android.gradle
 
+import com.android.build.gradle.AppExtension
+import com.android.build.gradle.AppPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-
-import com.android.build.gradle.AppPlugin
-import com.android.build.gradle.AppExtension
-
 /**
  * Transform插件入口
  */
@@ -14,16 +12,18 @@ public class TransformPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
-        def isApp = project.plugins.hasPlugin(AppPlugin)
+        def isApp = project.plugins.hasPlugin(AppPlugin) || project.plugins.hasPlugin("com.taobao.android.application");
         if (isApp) {
             // 创建扩展参数，接受插桩定制
             project.extensions.create('tranformConfig', TransformExtension);
-//            project.logger.error("tranformConfig=>${project.tranformConfig}");
+            project.extensions.tranformConfig.extensions.create('dexConfig', DexExtension);
 
             //遍历class文件和jar文件，在这里可以进行class文件asm文件替换
             def android = project.extensions.getByType(AppExtension)
             def transform = new TransformImpl(project)
             android.registerTransform(transform)
+        } else {
+            project.logger.error("project has no AppPlugin，do nothing!");
         }
 
         project.afterEvaluate {

@@ -26,10 +26,15 @@ import java.util.zip.ZipFile
 public class DexProcessor {
     private final static Logger logger = Logging.getLogger(DexProcessor);
 
-    static TransformExtension transformExt;
+    private DexExtension dexExtension;
+
+    public DexProcessor(DexExtension dexExtension) {
+        this.dexExtension = dexExtension;
+        logger.debug("dexExtension => ${dexExtension}")
+    }
 
     // com/android/test/MainActivity.class
-    public static boolean shouldprocessClass(String className) {
+    public boolean shouldprocessClass(String className) {
         if(!className.endsWith(".class")) {
             return false;
         }
@@ -40,8 +45,8 @@ public class DexProcessor {
             return false;
         }
 
-        if(transformExt != null && transformExt.excludeClasses != null) {
-            if(transformExt.excludeClasses.contains(className)) {
+        if(dexExtension != null && dexExtension.excludeClasses != null) {
+            if(dexExtension.excludeClasses.contains(className)) {
                 logger.error("excludeClass => ${className}");
                 return false;
             }
@@ -50,7 +55,7 @@ public class DexProcessor {
         return true;
     }
 
-    public static byte[] processClass(File file, String className) {
+    public byte[] processClass(File file, String className) {
         // 1.首先我们使用ClassReader读取class文件为asm code，
         // 2.然后定义一个Visitor用来处理字节码；当classReader调用accept的时候,Visitor就会按一定的顺序调用 里边重载的方法
         ClassReader classReader = new ClassReader(file.bytes);
@@ -63,15 +68,15 @@ public class DexProcessor {
 
     // xx/Library/Android/android-sdk/extras/android/m2repository/com/android/support/support-annotations/25.3.1/support-annotations-25.3.1.jar
     // xx/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.3.1/jars/classes.jar
-    public static boolean shouldprocessJar(String jarName) {
+    public boolean shouldprocessJar(String jarName) {
         // for test
 //        if(jarName.contains("appcompat-v7")) {
 //            return false;
 //        }
-        if(transformExt != null && transformExt.excludeJars != null) {
+        if(dexExtension != null && dexExtension.excludeJars != null) {
             // format jarName
             String formatJarName = jarName.replace('/', '.');
-            for(String excludeJar : transformExt.excludeJars) {
+            for(String excludeJar : dexExtension.excludeJars) {
                 excludeJar = excludeJar.replace(':', '.');
                 if(formatJarName.contains(excludeJar)) {
                     logger.error("excludeJar => ${jarName}");
@@ -83,7 +88,7 @@ public class DexProcessor {
         return true;
     }
 
-    public static void processJar(File inputJar, File outPutJar) {
+    public void processJar(File inputJar, File outPutJar) {
 
         JarOutputStream target = null;
         JarFile jarfile = null;
@@ -128,7 +133,7 @@ public class DexProcessor {
     }
 
     // from JarFile.java
-    private static byte[] getBytes(ZipFile jarfile, ZipEntry entry) throws IOException {
+    private byte[] getBytes(ZipFile jarfile, ZipEntry entry) throws IOException {
         InputStream inputStream = jarfile.getInputStream(entry);
         Throwable throwable = null;
         byte[] bytes;
@@ -280,7 +285,7 @@ public class DexProcessor {
      *
      *
      */
-    public static void prepareClass(File destDir) {
+    public void prepareClass(File destDir) {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         cw.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, "com/android/gradle/TimeUtil", null,
@@ -374,30 +379,55 @@ public class DexProcessor {
                 false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitVarInsn(Opcodes.ASTORE, 3);
-        // ((Long)endTimes.get(key)).longValue()
+
+        // ((Long)endTimes.get(key)).longValue()-((Long)startTimes.get(key)).longValue()
         mw.visitFieldInsn(Opcodes.GETSTATIC, "com/android/gradle/TimeUtil", "endTimes", "Ljava/util/Map;");
         mw.visitVarInsn(Opcodes.ALOAD, 3);
         mw.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Map", "get",
                 "(Ljava/lang/Object;)Ljava/lang/Object;", true);
         mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Long");
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
-        // ((Long)startTimes.get(key)).longValue()
         mw.visitFieldInsn(Opcodes.GETSTATIC, "com/android/gradle/TimeUtil", "startTimes", "Ljava/util/Map;");
         mw.visitVarInsn(Opcodes.ALOAD, 3);
         mw.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Map", "get",
                 "(Ljava/lang/Object;)Ljava/lang/Object;", true);
         mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Long");
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
-
         mw.visitInsn(Opcodes.LSUB);
         mw.visitVarInsn(Opcodes.LSTORE, 4);
+
+        // if(Looper.myLooper() == Looper.getMainLooper() && costTime >= 16L)
+        Label iftrue1 = new Label();
+        Label iftrue2 = new Label();
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "myLooper", "()Landroid/os/Looper;", false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "getMainLooper", "()Landroid/os/Looper;", false);
+        mw.visitJumpInsn(Opcodes.IF_ACMPNE, iftrue1);
+        mw.visitVarInsn(Opcodes.LLOAD, 4);
+//        mw.visitLdcInsn(new Long(16l));
+        if(dexExtension != null && dexExtension.thresholdInMainThread > 0) {
+            mw.visitLdcInsn(new Long(dexExtension.thresholdInMainThread));
+        } else {
+            mw.visitLdcInsn(new Long(16l));
+        }
+        mw.visitInsn(Opcodes.LCMP);
+        mw.visitJumpInsn(Opcodes.IFLT, iftrue2);
 
         //  System.out.println(key + " cost:" + exclusive + "ms");
         mw.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
         mw.visitInsn(Opcodes.DUP);
-        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-        mw.visitLdcInsn(" load: ");
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V",
+                false);
+        mw.visitLdcInsn(" Thread: ");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn(" load1: ");
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
                 false);
         mw.visitVarInsn(Opcodes.ALOAD, 3);
@@ -414,6 +444,64 @@ public class DexProcessor {
                 false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+        mw.visitInsn(Opcodes.RETURN);
+        mw.visitLabel(iftrue2);
+        mw.visitLabel(iftrue1);
+
+        Label end = new Label();
+        mw.visitJumpInsn(Opcodes.GOTO, end);
+        mw.visitLabel(end);
+
+        // if(Looper.myLooper() != Looper.getMainLooper() && costTime >= 500L)
+        Label iftrue3 = new Label();
+        Label iftrue4 = new Label();
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "myLooper", "()Landroid/os/Looper;", false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "getMainLooper", "()Landroid/os/Looper;", false);
+        mw.visitJumpInsn(Opcodes.IF_ACMPEQ, iftrue3);
+        mw.visitVarInsn(Opcodes.LLOAD, 4);
+//        mw.visitLdcInsn(new Long(500l));
+        if(dexExtension != null && dexExtension.thresholdInOtherThread > 0) {
+            mw.visitLdcInsn(new Long(dexExtension.thresholdInOtherThread));
+        } else {
+            mw.visitLdcInsn(new Long(500l));
+        }
+        mw.visitInsn(Opcodes.LCMP);
+        mw.visitJumpInsn(Opcodes.IFLT, iftrue4);
+
+        mw.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
+        mw.visitInsn(Opcodes.DUP);
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V",
+                false);
+        mw.visitLdcInsn(" Thread: ");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn(" load2: ");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitVarInsn(Opcodes.ALOAD, 3);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn(" cost: ");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitVarInsn(Opcodes.LLOAD, 4);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(J)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn(" ms!");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+        mw.visitInsn(Opcodes.RETURN);
+        mw.visitLabel(iftrue4);
+        mw.visitLabel(iftrue3);
 
 //        mw.visitVarInsn(Opcodes.LLOAD, 4);
 //        mw.visitInsn(Opcodes.LRETURN);   // 从当前方法返回对象引用

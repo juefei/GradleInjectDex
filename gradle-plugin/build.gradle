@@ -28,7 +28,7 @@ uploadArchives {
             }
             pom.groupId = 'com.android.gradle.plugin'
             pom.artifactId = 'tasktime'
-            pom.version = '1.10.9.154-SNAPSHOT'
+            pom.version = '1.10.9.189-SNAPSHOT'
             if(pom.version.toLowerCase().contains('snapshot')) {
                 repository(url: 'http://mvnrepo.xxxx.com/nexus/content/repositories/snapshots/') {
                     authentication(userName: 'xxxx', password: 'xxxx')
