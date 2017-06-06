@@ -6,21 +6,19 @@ import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 
-class TransformImpl extends Transform {
-    private final static Logger logger = Logging.getLogger(TransformImpl);
+final class TransformMainDex extends Transform {
+    private final static Logger logger = Logging.getLogger(TransformMainDex);
 
     private Project project;
 
-    private DexProcessor dexProcessor;
-
-    public TransformImpl(Project project) {
+    public TransformMainDex(Project project) {
         this.project = project;
-        dexProcessor = new DexProcessor(project.tranformConfig.dexConfig);
+        DexProcessor.setDexExtension(project.tranformConfig.dexConfig);
     }
 
     @Override
     String getName() {
-        return "HookDex";
+        return "InjectMainDex";
     }
 
     @Override
@@ -50,9 +48,7 @@ class TransformImpl extends Transform {
     void transform(Context context, Collection<TransformInput> inputs, Collection<TransformInput> referencedInputs,
                    TransformOutputProvider outputProvider, boolean isIncremental)
                     throws IOException, TransformException, InterruptedException {
-        /**
-         * 遍历输入文件
-         */
+
         inputs.each { TransformInput input ->
             /**
              * 遍历目录
@@ -61,15 +57,17 @@ class TransformImpl extends Transform {
 
                 File dest = outputProvider.getContentLocation(directoryInput.name, directoryInput.contentTypes,
                                                                 directoryInput.scopes, Format.DIRECTORY);
-
                 //这里进行字节码注入处理 TODO
                 logger.debug "process directory = ${directoryInput.file.absolutePath}"
-                File tmpDestDir = new File(directoryInput.file.parentFile, "asm")
+                File tmpDestDir = new File(directoryInput.file.parentFile, "asm");
                 if(!tmpDestDir.exists()) {
-                    tmpDestDir.mkdirs()
+                    tmpDestDir.mkdirs();
                 }
+                DexProcessor.prepareClass(tmpDestDir);
+
                 processDirectory(directoryInput.file, tmpDestDir);
-                FileUtil.copyDirectory(tmpDestDir, dest)
+                FileUtil.copyDirectory(tmpDestDir, dest);
+                tmpDestDir.deleteDir();
             }
 
             /**
@@ -83,17 +81,13 @@ class TransformImpl extends Transform {
                 }
                 File dest = outputProvider.getContentLocation(destName, jarInput.contentTypes,
                                                                 jarInput.scopes, Format.JAR);
-
                 //处理jar进行字节码注入处理 TODO
                 logger.error("process jar = " + jarInput.file.absolutePath);
-                if(dexProcessor.shouldprocessJar(jarInput.file.absolutePath)) {
-                    File tmpDest = new File(jarInput.file.parentFile, jarInput.file.name + ".tmp");
-                    if(tmpDest.exists()) {
-                        tmpDest.delete();
-                    }
-                    tmpDest.createNewFile();
-                    dexProcessor.processJar(jarInput.file, tmpDest);
-                    FileUtil.copyFile(tmpDest, dest,true);
+                if(DexProcessor.shouldprocessJar(jarInput.file.absolutePath)) {
+                    File tmpDest = File.createTempFile(jarInput.file.name, ".tmp", jarInput.file.parentFile);
+                    DexProcessor.processJar(jarInput.file, tmpDest);
+                    FileUtil.copyFile(tmpDest, dest, true);
+                    tmpDest.delete();
                 } else {
                     logger.error("ignore process jar = " + jarInput.file.absolutePath);
                     FileUtil.copyFile(jarInput.file, dest, true)
@@ -104,14 +98,13 @@ class TransformImpl extends Transform {
 
     private void processDirectory(File sourceDir, File destDir) {
 
-        dexProcessor.prepareClass(destDir);
-
         sourceDir.traverse { inputFile ->
+
             if (!inputFile.isDirectory()) {
                 String relativePath = FileUtil.relativize(sourceDir, inputFile)
                 File outputFile = new File(destDir, relativePath)
-                if(dexProcessor.shouldprocessClass(relativePath)) {
-                    def bytes = dexProcessor.processClass(inputFile, relativePath)
+                if(DexProcessor.shouldprocessClass(relativePath)) {
+                    def bytes = DexProcessor.processClass(inputFile, relativePath)
                     FileUtil.copyBytesToFile(bytes, outputFile)
                 } else {
                     logger.error("ignore process classFile = " + inputFile.absolutePath)

@@ -27,11 +27,14 @@ public class TestBuild {
         endTimes.put((Object)var0, (Object)var2);
     }
 
-    public static long getCostTime(String var0, String var1, String var2) {
-        String var3 = var0 + var1 + var2;
-        long var4 = ((Long)endTimes.get(var3)).longValue() - ((Long)startTimes.get(var3)).longValue();
-        System.out.println(var3 + " cost: " + var4 + " ms!");
-        return var4;
+    public static void getCostTime(String var0, String var1, String var2) {
+        try {
+            String var3 = var0 + var1 + var2;
+            long var4 = ((Long)endTimes.get(var3)).longValue() - ((Long)startTimes.get(var3)).longValue();
+            System.out.println(var3 + " cost: " + var4 + " ms!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

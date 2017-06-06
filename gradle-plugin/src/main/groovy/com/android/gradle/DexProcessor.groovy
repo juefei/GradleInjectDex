@@ -20,21 +20,21 @@ import java.util.zip.ZipFile
 
  2、使用ClassWriter和ClassReader修改Test.class文件
 
- 3、将修改后的文件保存到新的目录即可
+ 3、将修改后的class文件保存为新的文件即可
 
  */
 public class DexProcessor {
     private final static Logger logger = Logging.getLogger(DexProcessor);
 
-    private DexExtension dexExtension;
+    private static DexExtension dexExtension;
 
-    public DexProcessor(DexExtension dexExtension) {
-        this.dexExtension = dexExtension;
+    public static void setDexExtension(DexExtension dexExt) {
+        dexExtension = dexExt;
         logger.debug("dexExtension => ${dexExtension}")
     }
 
     // com/android/test/MainActivity.class
-    public boolean shouldprocessClass(String className) {
+    public static boolean shouldprocessClass(String className) {
         if(!className.endsWith(".class")) {
             return false;
         }
@@ -55,7 +55,7 @@ public class DexProcessor {
         return true;
     }
 
-    public byte[] processClass(File file, String className) {
+    public static byte[] processClass(File file, String className) {
         // 1.首先我们使用ClassReader读取class文件为asm code，
         // 2.然后定义一个Visitor用来处理字节码；当classReader调用accept的时候,Visitor就会按一定的顺序调用 里边重载的方法
         ClassReader classReader = new ClassReader(file.bytes);
@@ -68,7 +68,7 @@ public class DexProcessor {
 
     // xx/Library/Android/android-sdk/extras/android/m2repository/com/android/support/support-annotations/25.3.1/support-annotations-25.3.1.jar
     // xx/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.3.1/jars/classes.jar
-    public boolean shouldprocessJar(String jarName) {
+    public static boolean shouldprocessJar(String jarName) {
         // for test
 //        if(jarName.contains("appcompat-v7")) {
 //            return false;
@@ -88,8 +88,7 @@ public class DexProcessor {
         return true;
     }
 
-    public void processJar(File inputJar, File outPutJar) {
-
+    public static void processJar(File inputJar, File outPutJar) {
         JarOutputStream target = null;
         JarFile jarfile = null;
         try{
@@ -118,6 +117,7 @@ public class DexProcessor {
 
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("processJar => " + e.getMessage());
         } finally {
             try {
                 if (target != null) {
@@ -133,7 +133,7 @@ public class DexProcessor {
     }
 
     // from JarFile.java
-    private byte[] getBytes(ZipFile jarfile, ZipEntry entry) throws IOException {
+    private static byte[] getBytes(ZipFile jarfile, ZipEntry entry) throws IOException {
         InputStream inputStream = jarfile.getInputStream(entry);
         Throwable throwable = null;
         byte[] bytes;
@@ -261,31 +261,42 @@ public class DexProcessor {
     }
 
     /**
-     * com/android/gradle/TimeUtil.class
+     * 使用ASM生成一个类 com/android/gradle/TimeUtil.class
      *
-     * public class TimeUtil {
-         private static Map<String, Long> startTimes = new HashMap<String, Long>();
-         private static Map<String, Long> endTimes   = new HashMap<String, Long>();
+     public class TimeUtil {
+        private static Map<Object, Object> endTimes;
+        private static Map<Object, Object> startTimes;
 
-         public static void setStartTime(String key) {
-            startTimes.put(key, System.currentTimeMillis());
-         }
+        static {
+            startTimes = new HashMap();
+            endTimes = new HashMap();
+        }
 
-         public static void setEndTime(String key) {
-            endTimes.put(key, System.currentTimeMillis());
-         }
+        public static void getCostTime(String str, String str2, String str3) {
+            try {
+                String str4 = str + "#" + str2 + "#" + str3;
+                long longValue = ((Long) endTimes.get(str4)).longValue() - ((Long) startTimes.get(str4)).longValue();
+                if (Looper.myLooper() == Looper.getMainLooper() && longValue >= 20) {
+                    System.out.println(" Thread: " + Thread.currentThread().getName() + " load1: " + str4 + " cost: " + longValue + " ms!");
+                } else if (Looper.myLooper() != Looper.getMainLooper() && longValue >= 500) {
+                    System.out.println(" Thread: " + Thread.currentThread().getName() + " load2: " + str4 + " cost: " + longValue + " ms!");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
-         public static long getExclusiveTime(String className, String methodName, String methodDesc) {
-            String key = className + methodName + methodDesc;
-            long exclusive = endTimes.get(key) - startTimes.get(key);
-            System.out.println(className.replace("/", ".") + "." + methodName + " exclusive:" + exclusive);
-            return exclusive;
-         }
+        public static void setEndTime(String str) {
+            endTimes.put(str, Long.valueOf(System.currentTimeMillis()));
+        }
+
+        public static void setStartTime(String str) {
+            startTimes.put(str, Long.valueOf(System.currentTimeMillis()));
+        }
      }
      *
-     *
      */
-    public void prepareClass(File destDir) {
+    public static void prepareClass(File destDir) {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         cw.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, "com/android/gradle/TimeUtil", null,
@@ -295,7 +306,7 @@ public class DexProcessor {
         MethodVisitor mw;
         FieldVisitor fw;
 
-        // 0.
+        // 0. add field
         fw = cw.visitField(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, "startTimes", "Ljava/util/Map;",
                 "Ljava/util/Map<Ljava/lang/Object;Ljava/lang/Object;>;", null);
         fw.visitEnd();
@@ -358,6 +369,13 @@ public class DexProcessor {
         mw = cw.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "getCostTime",
                 "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", null, null);
         mw.visitCode();
+
+        Label lTryBlockStart = new Label();
+        Label lTryBlockEnd = new Label();
+        Label lHandler = new Label();
+        mw.visitTryCatchBlock(lTryBlockStart, lTryBlockEnd, lHandler, "java/lang/Exception");
+        mw.visitLabel(lTryBlockStart);
+
         // String key = className + methodName + methodDesc;
         mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
         mw.visitInsn(Opcodes.DUP);
@@ -398,19 +416,17 @@ public class DexProcessor {
 
         // if(Looper.myLooper() == Looper.getMainLooper() && costTime >= 16L)
         Label iftrue1 = new Label();
-        Label iftrue2 = new Label();
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "myLooper", "()Landroid/os/Looper;", false);
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "getMainLooper", "()Landroid/os/Looper;", false);
         mw.visitJumpInsn(Opcodes.IF_ACMPNE, iftrue1);
         mw.visitVarInsn(Opcodes.LLOAD, 4);
-//        mw.visitLdcInsn(new Long(16l));
         if(dexExtension != null && dexExtension.thresholdInMainThread > 0) {
             mw.visitLdcInsn(new Long(dexExtension.thresholdInMainThread));
         } else {
             mw.visitLdcInsn(new Long(16l));
         }
         mw.visitInsn(Opcodes.LCMP);
-        mw.visitJumpInsn(Opcodes.IFLT, iftrue2);
+        mw.visitJumpInsn(Opcodes.IFLT, iftrue1);
 
         //  System.out.println(key + " cost:" + exclusive + "ms");
         mw.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
@@ -445,28 +461,21 @@ public class DexProcessor {
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
         mw.visitInsn(Opcodes.RETURN);
-        mw.visitLabel(iftrue2);
         mw.visitLabel(iftrue1);
 
-        Label end = new Label();
-        mw.visitJumpInsn(Opcodes.GOTO, end);
-        mw.visitLabel(end);
-
         // if(Looper.myLooper() != Looper.getMainLooper() && costTime >= 500L)
-        Label iftrue3 = new Label();
-        Label iftrue4 = new Label();
+        Label iftrue2 = new Label();
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "myLooper", "()Landroid/os/Looper;", false);
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "android/os/Looper", "getMainLooper", "()Landroid/os/Looper;", false);
-        mw.visitJumpInsn(Opcodes.IF_ACMPEQ, iftrue3);
+        mw.visitJumpInsn(Opcodes.IF_ACMPEQ, iftrue2);
         mw.visitVarInsn(Opcodes.LLOAD, 4);
-//        mw.visitLdcInsn(new Long(500l));
         if(dexExtension != null && dexExtension.thresholdInOtherThread > 0) {
             mw.visitLdcInsn(new Long(dexExtension.thresholdInOtherThread));
         } else {
             mw.visitLdcInsn(new Long(500l));
         }
         mw.visitInsn(Opcodes.LCMP);
-        mw.visitJumpInsn(Opcodes.IFLT, iftrue4);
+        mw.visitJumpInsn(Opcodes.IFLT, iftrue2);
 
         mw.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
@@ -500,8 +509,14 @@ public class DexProcessor {
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
         mw.visitInsn(Opcodes.RETURN);
-        mw.visitLabel(iftrue4);
-        mw.visitLabel(iftrue3);
+        mw.visitLabel(iftrue2);
+
+        mw.visitLabel(lTryBlockEnd);
+        Label lCatchBlockEnd = new Label();
+        mw.visitJumpInsn(Opcodes.GOTO, lCatchBlockEnd);
+        mw.visitLabel(lHandler);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/RuntimeException", "printStackTrace", "()V", false);
+        mw.visitLabel(lCatchBlockEnd);
 
 //        mw.visitVarInsn(Opcodes.LLOAD, 4);
 //        mw.visitInsn(Opcodes.LRETURN);   // 从当前方法返回对象引用
