@@ -5,9 +5,6 @@ import com.android.build.gradle.AppPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-
-
-
 /**
  * Transform插件入口类，支持标准Android工程和带有插件化框架Android工程（包含多个模块bundle）。
  *
@@ -25,7 +22,7 @@ import org.gradle.api.Task
  *      |
  *      |
  *      V
- *  javacAwbsDebug  (output：build/intermediates/awb-classes/debug, build/intermediates/awb-dependency-cache/debug)
+ *  javacAwbsDebug[compileAwbDebugJavaWithJavac]  (output：build/intermediates/awb-classes/debug, build/intermediates/awb-dependency-cache/debug)
  *      |
  *      |
  *      V
@@ -95,9 +92,11 @@ public class TransformPlugin implements Plugin<Project> {
                         project.logger.error "TaskDependency=>${task.getName()}"
                     }
 
-                    injectMainDexTask.doLast {
-                        def transformAwb = new TransformAwb(project, variant.name);
-                        transformAwb.transform();
+                    if ("release".equalsIgnoreCase(variant.name)) {
+                        injectMainDexTask.doLast {
+                            def transformAwb = new TransformAwb(project, variant.name);
+                            transformAwb.transform();
+                        }
                     }
                 }
 
@@ -114,6 +113,14 @@ public class TransformPlugin implements Plugin<Project> {
                     proguardTask.getTaskDependencies().getDependencies(proguardTask).each { Task task ->
                         project.logger.error "TaskDependency=>${task.getName()}"
                     }
+
+                    if ("debug".equalsIgnoreCase(variant.name)) {
+                        proguardTask.doLast {
+                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
+                            transformAwbV2.transform();
+                        }
+                    }
+
                 }
 
                 def dexTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
@@ -160,19 +167,33 @@ public class TransformPlugin implements Plugin<Project> {
 //                    }
 //                }
 //
-//                def javacAwbsXXXTask = project.tasks.findByName("javacAwbs${variant.name.capitalize()}")
-//                if(javacAwbsXXXTask) {
-//                    project.logger.error "javacAwbsXXXTask => ${javacAwbsXXXTask.name}"
-//                    javacAwbsXXXTask.inputs.files.files.each { File file ->
-//                        project.logger.error "file inputs=>${file.absolutePath}"
-//                    }
-//                    javacAwbsXXXTask.outputs.files.files.each { File file ->
-//                        project.logger.error "file outputs=>${file.absolutePath}"
-//                    }
-//                    javacAwbsXXXTask.getTaskDependencies().getDependencies(javacAwbsXXXTask).each { Task task ->
-//                        project.logger.error "TaskDependency=>${task.getName()}"
-//                    }
-//                }
+                def javacAwbsXXXTask = project.tasks.findByName("javacAwbs${variant.name.capitalize()}")
+                if(javacAwbsXXXTask) {
+                    project.logger.error "javacAwbsXXXTask => ${javacAwbsXXXTask.name}"
+                    javacAwbsXXXTask.inputs.files.files.each { File file ->
+                        project.logger.error "file inputs=>${file.absolutePath}"
+                    }
+                    javacAwbsXXXTask.outputs.files.files.each { File file ->
+                        project.logger.error "file outputs=>${file.absolutePath}"
+                    }
+                    javacAwbsXXXTask.getTaskDependencies().getDependencies(javacAwbsXXXTask).each { Task task ->
+                        project.logger.error "TaskDependency=>${task.getName()}"
+                    }
+                }
+
+                def compileAwbXXXJavaWithJavacTask = project.tasks.findByName("compileAwb${variant.name.capitalize()}JavaWithJavac")
+                if(compileAwbXXXJavaWithJavacTask) {
+                    project.logger.error "compileAwbXXXJavaWithJavacTask => ${compileAwbXXXJavaWithJavacTask.name}"
+                    compileAwbXXXJavaWithJavacTask.inputs.files.files.each { File file ->
+                        project.logger.error "file inputs=>${file.absolutePath}"
+                    }
+                    compileAwbXXXJavaWithJavacTask.outputs.files.files.each { File file ->
+                        project.logger.error "file outputs=>${file.absolutePath}"
+                    }
+                    compileAwbXXXJavaWithJavacTask.getTaskDependencies().getDependencies(compileAwbXXXJavaWithJavacTask).each { Task task ->
+                        project.logger.error "TaskDependency=>${task.getName()}"
+                    }
+                }
 //
 //                def packageXXXAwbsTask = project.tasks.findByName("package${variant.name.capitalize()}Awbs")
 //                if(packageXXXAwbsTask) {

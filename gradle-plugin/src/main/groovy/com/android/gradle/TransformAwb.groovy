@@ -11,6 +11,7 @@ import org.gradle.api.logging.Logging
  * 按照打包流程分析，class文件所在目录分别是：
  *    /intermediates/awb-classes/
  *    /intermediates/exploded-awb/
+ *    可能会遗漏部分间接依赖的jar包，如：扫码bundle内部坐标依赖解码sdk。
  */
 final class TransformAwb {
 
@@ -35,13 +36,13 @@ final class TransformAwb {
             inputClassDir.traverse { inputFile ->
                 if (!inputFile.isDirectory()) {
                     String relativePath = FileUtil.relativize(inputClassDir, inputFile);
-                    logger.debug("TransformAwb# classFile = ${inputFile.absolutePath}, relativePath = ${relativePath}");
+                    logger.error("TransformAwb# classFile = ${inputFile.absolutePath}, relativePath = ${relativePath}");
                     if(DexProcessor.shouldprocessClass(relativePath)) {
                         def bytes = DexProcessor.processClass(inputFile, relativePath);
                         File outputFile = File.createTempFile(inputFile.getName(), ".tmp", inputFile.getParentFile());
                         FileUtil.copyBytesToFile(bytes, outputFile);
                     } else {
-                        logger.debug("ignore process classFile = " + inputFile.absolutePath)
+                        logger.error("ignore process classFile = " + inputFile.absolutePath)
                     }
                 }
 

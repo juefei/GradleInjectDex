@@ -68,14 +68,16 @@ public class DexProcessor {
 
     // xx/Library/Android/android-sdk/extras/android/m2repository/com/android/support/support-annotations/25.3.1/support-annotations-25.3.1.jar
     // xx/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.3.1/jars/classes.jar
+    // xx/build/intermediates/classes-proguard/debug/com.taobao.android-taobao_dexmerge/obfuscated.jar
     public static boolean shouldprocessJar(String jarName) {
-        // for test
-//        if(jarName.contains("appcompat-v7")) {
-//            return false;
-//        }
         if(dexExtension != null && dexExtension.excludeJars != null) {
             // format jarName
-            String formatJarName = jarName.replace('/', '.');
+            String formatJarName;
+            if(jarName.contains("classes-proguard")) {
+                formatJarName = jarName.replace('-', '.');
+            } else {
+                formatJarName = jarName.replace('/', '.');
+            }
             for(String excludeJar : dexExtension.excludeJars) {
                 excludeJar = excludeJar.replace(':', '.');
                 if(formatJarName.contains(excludeJar)) {
