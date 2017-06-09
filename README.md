@@ -1,9 +1,9 @@
 # GradleInjectDex 
-gradle打包插件用于字节码插桩
+gradle打包插件用于字节码插桩。本插件不仅适用于标准Android工程，同时也适用于使用插件框架Atlas的Android工程。Atlas地址：https://github.com/alibaba/atlas
 
 ## GradleInjectDex介绍
 我们在日常开发过程中，经常会有字节码注入的需求，比如，最近几年热门的热修复技术QQ空间dex插桩防止class verify 无痕埋点AOP方案等等。经常会有各种方案文章提及如何使用字节码注入技术实现自己的业务需求，但是一般都侧重字节码注入后达到的业务效果，还没有系统性介绍打包阶段字节码注入技术细节。
-本次从工程实践的角度，详细阐述如何开发一个gradle plugin，以及如何使用ASM AOP框架修改字节码，已达到运行阶段特定条件下执行定制代码功能。
+本次从工程实践的角度，详细阐述如何开发一个gradle plugin，以及如何使用ASM AOP框架修改字节码，以达到运行阶段特定条件下执行定制代码功能。
 
 
 * gradle-plugin工程
