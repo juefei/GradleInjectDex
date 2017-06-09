@@ -60,7 +60,7 @@ final class TransformAwb {
             inputJarDir.traverse { inputFile ->
                 if (!inputFile.isDirectory() && inputFile.getName().endsWith("classes.jar")) {
                     logger.error("TransformAwb# jarFile = " + inputFile.absolutePath);
-                    if(DexProcessor.shouldprocessJar(inputFile.absolutePath)) {
+                    if(DexProcessor.shouldprocessBundle(inputFile.absolutePath)) {
                         File outputFile = File.createTempFile(inputFile.getName(), ".tmp", inputFile.getParentFile());
                         DexProcessor.processJar(inputFile, outputFile);
                         if(!outputFile.renameTo(inputFile)){

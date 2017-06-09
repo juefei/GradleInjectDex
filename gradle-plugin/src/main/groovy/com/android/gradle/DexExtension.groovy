@@ -15,8 +15,12 @@ public class DexExtension {
     List<String> excludeClasses;
 
     // 待排除不做插桩jar列表,如
-    // []
+    // [com.android.support:recyclerview-v7]
     List<String> excludeJars;
+
+    // 待排除不做插桩bundle列表，如
+    // [com.taobao.android:taobao_dexmerge]
+    List<String> excludeBundles;
 
     @Override
     public String toString() {
@@ -25,6 +29,7 @@ public class DexExtension {
                 ", thresholdInOtherThread=" + thresholdInOtherThread +
                 ", excludeClasses=" + excludeClasses +
                 ", excludeJars=" + excludeJars +
+                ", excludeJars=" + excludeBundles +
                 '}';
     }
 

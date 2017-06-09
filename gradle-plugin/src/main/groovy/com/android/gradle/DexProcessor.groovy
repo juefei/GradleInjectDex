@@ -9,9 +9,10 @@ import sun.misc.IOUtils
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-
 /**
  *
  一般来说，对一个普通的java文件字节码操作流程:
@@ -60,7 +61,7 @@ public class DexProcessor {
         // 2.然后定义一个Visitor用来处理字节码；当classReader调用accept的时候,Visitor就会按一定的顺序调用 里边重载的方法
         ClassReader classReader = new ClassReader(file.bytes);
         ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS);
-        ClassVisitor cv = new CostMethodClassVisitor(classWriter, className);
+        ClassVisitor cv = new CostMethodClassVisitor(classWriter, className, "maindex");
         classReader.accept(cv, ClassReader.EXPAND_FRAMES);
         byte[] code = classWriter.toByteArray();
         return code;
@@ -68,16 +69,9 @@ public class DexProcessor {
 
     // xx/Library/Android/android-sdk/extras/android/m2repository/com/android/support/support-annotations/25.3.1/support-annotations-25.3.1.jar
     // xx/app/build/intermediates/exploded-aar/com.android.support/support-v4/25.3.1/jars/classes.jar
-    // xx/build/intermediates/classes-proguard/debug/com.taobao.android-taobao_dexmerge/obfuscated.jar
     public static boolean shouldprocessJar(String jarName) {
         if(dexExtension != null && dexExtension.excludeJars != null) {
-            // format jarName
-            String formatJarName;
-            if(jarName.contains("classes-proguard")) {
-                formatJarName = jarName.replace('-', '.');
-            } else {
-                formatJarName = jarName.replace('/', '.');
-            }
+            String formatJarName = jarName.replace('/', '.');
             for(String excludeJar : dexExtension.excludeJars) {
                 excludeJar = excludeJar.replace(':', '.');
                 if(formatJarName.contains(excludeJar)) {
@@ -90,13 +84,73 @@ public class DexProcessor {
         return true;
     }
 
+    // xx/build/intermediates/exploded-awb/com.tmall.wireless/tmallandroid_weapp_bundle/1.0.2.10/jars/classes.jar
+    // xx/build/intermediates/classes-proguard/debug/com.taobao.android-taobao_dexmerge/obfuscated.jar
+    public static boolean shouldprocessBundle(String jarName) {
+        if(dexExtension != null && dexExtension.excludeBundles != null) {
+            String formatJarName;
+            if(jarName.contains("classes-proguard")) {
+                formatJarName = jarName.replace('-', '.');
+            } else {
+                formatJarName = jarName.replace('/', '.');
+            }
+            for(String excludeJar : dexExtension.excludeBundles) {
+                excludeJar = excludeJar.replace(':', '.');
+                if(formatJarName.contains(excludeJar)) {
+                    logger.error("excludeBundle => ${jarName}");
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static String getBundleName(String path) {
+        if(path.contains("classes-proguard")) {
+            String[] targetArray = path.split("/");
+            if(targetArray.length > 2) {
+                String target = targetArray[targetArray.length - 2];
+                return target.replace("-", ":");
+            }
+        } else {
+            String regex = "(repository|exploded-aar|exploded-awb)\\/((.*))\\/\\d";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher ruleMatcher = pattern.matcher(path);
+            if (ruleMatcher.find()) {
+                if(ruleMatcher.groupCount() > 2) {
+                    String target = ruleMatcher.group(2);
+                    String[] targetArray = target.split("/");
+                    if(targetArray.length == 2) {   // com.android.support/support-v4
+                        target = target.replace("/", ":");
+                    } else if(targetArray.length > 2) {  // com/android/support/support-annotations
+                        target = "";
+                        for(int i = 0; i < targetArray.length - 1; i++){
+                            target += targetArray[i];
+                            if(i != targetArray.length - 2) {
+                                target += ".";
+                            } else {
+                                target += ":";
+                            }
+                        }
+                        target += targetArray[targetArray.length - 1];
+                    }
+
+                    return target;
+                }
+            }
+        }
+
+        return path;
+    }
+
     public static void processJar(File inputJar, File outPutJar) {
         JarOutputStream target = null;
         JarFile jarfile = null;
         try{
             target = new JarOutputStream(new FileOutputStream(outPutJar));
             jarfile = new JarFile(inputJar);
-            logger.debug("jarfile:"+jarfile.getName());
+            logger.debug("Jarfile:"+jarfile.getName());
             Enumeration<? extends JarEntry> entryList = jarfile.entries();
             while(entryList.hasMoreElements()) {
                 JarEntry jarEntry = (JarEntry) entryList.nextElement();
@@ -107,7 +161,8 @@ public class DexProcessor {
                     if(jarEntry.getName().endsWith(".class")) {
                         ClassReader classReader = new ClassReader(getBytes(jarfile, jarEntry));
                         ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS);
-                        ClassVisitor cv = new CostMethodClassVisitor(classWriter, jarEntry.getName());
+                        ClassVisitor cv = new CostMethodClassVisitor(classWriter, jarEntry.getName(),
+                                getBundleName(inputJar.absolutePath));
                         classReader.accept(cv, ClassReader.EXPAND_FRAMES);
                         byte[] bytes = classWriter.toByteArray();
                         target.write(bytes);
@@ -166,10 +221,12 @@ public class DexProcessor {
      */
     static class CostMethodClassVisitor extends ClassVisitor {
         private String className;
+        private String bundleName;
 
-        public CostMethodClassVisitor(ClassVisitor classVisitor, String className) {
+        public CostMethodClassVisitor(ClassVisitor classVisitor, String className, String bundleName) {
             super(Opcodes.ASM5, classVisitor);
             this.className = className;
+            this.bundleName = bundleName;
         }
 
         @Override
@@ -229,7 +286,7 @@ public class DexProcessor {
                     if(isInject()) {
 //                        logger.error("onMethodEnter# name: " + name + "==>des: " + desc);
                         //  相当于com.android.gradle.TimeUtil.setStartTime("name");
-                        String key = className + "#" + name + "#" + desc;
+                        String key = bundleName + "@" + className + "#" + name + "#" + desc;
                         mv.visitLdcInsn(key);
                         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/android/gradle/TimeUtil", "setStartTime",
                                 "(Ljava/lang/String;)V", false);
@@ -243,11 +300,11 @@ public class DexProcessor {
                     if(isInject()) {
 //                        logger.error("onMethodExit# name: " + name + "==>des: " + desc);
                         //  相当于com.android.gradle.TimeUtil.setEndTime("name");
-                        String key = className + "#" + name + "#" + desc;
+                        String key = bundleName + "@" + className + "#" + name + "#" + desc;
                         mv.visitLdcInsn(key);
                         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/android/gradle/TimeUtil", "setEndTime",
                                 "(Ljava/lang/String;)V", false);
-                        mv.visitLdcInsn(className);
+                        mv.visitLdcInsn(bundleName + "@" + className);
                         mv.visitLdcInsn(name);
                         mv.visitLdcInsn(desc);
                         //相当于com.android.test.TimeUtil.getCostTime("com/blueware/agent/TestTime","testTime");
