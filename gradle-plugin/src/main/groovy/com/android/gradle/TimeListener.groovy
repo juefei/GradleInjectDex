@@ -20,13 +20,37 @@ public class TimeListener implements TaskExecutionListener, BuildListener {
     @Override
     void beforeExecute(Task task) {
         clock = new org.gradle.util.Clock()
+
+//        task.project.logger.error "taskName:${task.name} "
+//        task.project.logger.error "inputs.files.files:-----------start------- "
+//        if (task.inputs.files.files) {
+//            task.inputs.files.files.each {
+//                task.project.logger.error "${it.absolutePath} "
+//            }
+//        }
+//        task.project.logger.error "inputs.files.files: -----------end---------- "
+//
+//        task.project.logger.error "TaskDependency: -----------start---------- "
+//        task.getTaskDependencies().getDependencies(task).each { Task tmptask ->
+//            task.project.logger.error "TaskDependency: ${tmptask.getName()}"
+//        }
+//        task.project.logger.error "TaskDependency: -----------end----------\n "
     }
 
     @Override
     void afterExecute(Task task, TaskState taskState) {
         def ms = clock.timeInMs
         times.add([ms, task.path])
-        task.project.logger.info "${task.path} spend ${ms}ms"
+        task.project.logger.error "${task.path} spend ${ms}ms"
+
+//        task.project.logger.error "taskName:${task.name}"
+//        task.project.logger.error "outputs.files.files: ------------start----------------- "
+//        if(task.outputs.files.files) {
+//            task.outputs.files.files.each {
+//                task.project.logger.error "${it.absolutePath} "
+//            }
+//        }
+//        task.project.logger.error "outputs.files.files: ---------------end------------------\n "
     }
 
     @Override

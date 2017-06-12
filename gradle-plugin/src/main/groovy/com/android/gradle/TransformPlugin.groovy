@@ -4,7 +4,6 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.AppPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 /**
  * Transform插件入口类，支持标准Android工程和带有插件化框架Android工程（包含多个模块bundle）。
  *
@@ -76,153 +75,153 @@ public class TransformPlugin implements Plugin<Project> {
         // 每个task都可以定义doFirst，doLast，用于定义在此task执行之前或之后执行的代码.
         project.afterEvaluate {
 
-            project.android.applicationVariants.each { variant ->
-
-                def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
-                if(injectMainDexTask) {
-                    project.logger.error "injectMainDexTask => ${injectMainDexTask.name}"
-
-                    injectMainDexTask.inputs.files.files.each { File file ->
-                        project.logger.error "file inputs=>${file.absolutePath}"
-                    }
-                    injectMainDexTask.outputs.files.files.each { File file ->
-                        project.logger.error "file outputs=>${file.absolutePath}"
-                    }
-                    injectMainDexTask.getTaskDependencies().getDependencies(injectMainDexTask).each { Task task ->
-                        project.logger.error "TaskDependency=>${task.getName()}"
-                    }
-
-                    if ("release".equalsIgnoreCase(variant.name)) {
-                        injectMainDexTask.doLast {
-                            def transformAwb = new TransformAwb(project, variant.name);
-                            transformAwb.transform();
-                        }
-                    }
-                }
-
-                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
-                if (proguardTask) {
-                    project.logger.error "proguardTask => ${proguardTask.name}"
-
-                    proguardTask.inputs.files.files.each { File file ->
-                        project.logger.error "file inputs=>${file.absolutePath}"
-                    }
-                    proguardTask.outputs.files.files.each { File file ->
-                        project.logger.error "file outputs=>${file.absolutePath}"
-                    }
-                    proguardTask.getTaskDependencies().getDependencies(proguardTask).each { Task task ->
-                        project.logger.error "TaskDependency=>${task.getName()}"
-                    }
-
-                    if ("debug".equalsIgnoreCase(variant.name)) {
-                        proguardTask.doLast {
-                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
-                            transformAwbV2.transform();
-                        }
-                    }
-
-                }
-
-                def dexTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
-                if (dexTask) {
-                    project.logger.error "dexTask => ${dexTask.name}"
-
-                    dexTask.inputs.files.files.each { File file ->
-                        project.logger.error "file inputs=>${file.absolutePath}"
-                    }
-                    dexTask.outputs.files.files.each { File file ->
-                        project.logger.error "file outputs=>${file.absolutePath}"
-                    }
-                    dexTask.getTaskDependencies().getDependencies(dexTask).each { Task task ->
-                        project.logger.error "TaskDependency=>${task.getName()}"
-                    }
-                }
-
-                // plugin： com.taobao.android.application
-//                def prepareAwbsXXXTask = project.tasks.findByName("prepareAwbs${variant.name.capitalize()}")
-//                if(prepareAwbsXXXTask) {
-//                    project.logger.error "prepareAwbsXXXTask => ${prepareAwbsXXXTask.name}"
-//                    prepareAwbsXXXTask.inputs.files.files.each { File file ->
+//            project.android.applicationVariants.each { variant ->
+//
+//                def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
+//                if(injectMainDexTask) {
+//                    project.logger.error "injectMainDexTask => ${injectMainDexTask.name}"
+//
+//                    injectMainDexTask.inputs.files.files.each { File file ->
 //                        project.logger.error "file inputs=>${file.absolutePath}"
 //                    }
-//                    prepareAwbsXXXTask.outputs.files.files.each { File file ->
+//                    injectMainDexTask.outputs.files.files.each { File file ->
 //                        project.logger.error "file outputs=>${file.absolutePath}"
 //                    }
-//                    prepareAwbsXXXTask.getTaskDependencies().getDependencies(prepareAwbsXXXTask).each { Task task ->
+//                    injectMainDexTask.getTaskDependencies().getDependencies(injectMainDexTask).each { Task task ->
+//                        project.logger.error "TaskDependency=>${task.getName()}"
+//                    }
+//
+//                    if ("release".equalsIgnoreCase(variant.name)) {
+//                        injectMainDexTask.doLast {
+//                            def transformAwb = new TransformAwb(project, variant.name);
+//                            transformAwb.transform();
+//                        }
+//                    }
+//                }
+//
+//                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+//                if (proguardTask) {
+//                    project.logger.error "proguardTask => ${proguardTask.name}"
+//
+//                    proguardTask.inputs.files.files.each { File file ->
+//                        project.logger.error "file inputs=>${file.absolutePath}"
+//                    }
+//                    proguardTask.outputs.files.files.each { File file ->
+//                        project.logger.error "file outputs=>${file.absolutePath}"
+//                    }
+//                    proguardTask.getTaskDependencies().getDependencies(proguardTask).each { Task task ->
+//                        project.logger.error "TaskDependency=>${task.getName()}"
+//                    }
+//
+//                    if ("debug".equalsIgnoreCase(variant.name)) {
+//                        proguardTask.doLast {
+//                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
+//                            transformAwbV2.transform();
+//                        }
+//                    }
+//
+//                }
+//
+//                def dexTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
+//                if (dexTask) {
+//                    project.logger.error "dexTask => ${dexTask.name}"
+//
+//                    dexTask.inputs.files.files.each { File file ->
+//                        project.logger.error "file inputs=>${file.absolutePath}"
+//                    }
+//                    dexTask.outputs.files.files.each { File file ->
+//                        project.logger.error "file outputs=>${file.absolutePath}"
+//                    }
+//                    dexTask.getTaskDependencies().getDependencies(dexTask).each { Task task ->
 //                        project.logger.error "TaskDependency=>${task.getName()}"
 //                    }
 //                }
 //
-//                def compileXXXJavaWithJavacTask = project.tasks.findByName("compile${variant.name.capitalize()}JavaWithJavac")
-//                if(compileXXXJavaWithJavacTask) {
-//                    project.logger.error "compileXXXJavaWithJavacTask => ${compileXXXJavaWithJavacTask.name}"
-//                    compileXXXJavaWithJavacTask.inputs.files.files.each { File file ->
+//                // plugin： com.taobao.android.application
+////                def prepareAwbsXXXTask = project.tasks.findByName("prepareAwbs${variant.name.capitalize()}")
+////                if(prepareAwbsXXXTask) {
+////                    project.logger.error "prepareAwbsXXXTask => ${prepareAwbsXXXTask.name}"
+////                    prepareAwbsXXXTask.inputs.files.files.each { File file ->
+////                        project.logger.error "file inputs=>${file.absolutePath}"
+////                    }
+////                    prepareAwbsXXXTask.outputs.files.files.each { File file ->
+////                        project.logger.error "file outputs=>${file.absolutePath}"
+////                    }
+////                    prepareAwbsXXXTask.getTaskDependencies().getDependencies(prepareAwbsXXXTask).each { Task task ->
+////                        project.logger.error "TaskDependency=>${task.getName()}"
+////                    }
+////                }
+////
+////                def compileXXXJavaWithJavacTask = project.tasks.findByName("compile${variant.name.capitalize()}JavaWithJavac")
+////                if(compileXXXJavaWithJavacTask) {
+////                    project.logger.error "compileXXXJavaWithJavacTask => ${compileXXXJavaWithJavacTask.name}"
+////                    compileXXXJavaWithJavacTask.inputs.files.files.each { File file ->
+////                        project.logger.error "file inputs=>${file.absolutePath}"
+////                    }
+////                    compileXXXJavaWithJavacTask.outputs.files.files.each { File file ->
+////                        project.logger.error "file outputs=>${file.absolutePath}"
+////                    }
+////                    compileXXXJavaWithJavacTask.getTaskDependencies().getDependencies(compileXXXJavaWithJavacTask).each { Task task ->
+////                        project.logger.error "TaskDependency=>${task.getName()}"
+////                    }
+////                }
+////
+//                def javacAwbsXXXTask = project.tasks.findByName("javacAwbs${variant.name.capitalize()}")
+//                if(javacAwbsXXXTask) {
+//                    project.logger.error "javacAwbsXXXTask => ${javacAwbsXXXTask.name}"
+//                    javacAwbsXXXTask.inputs.files.files.each { File file ->
 //                        project.logger.error "file inputs=>${file.absolutePath}"
 //                    }
-//                    compileXXXJavaWithJavacTask.outputs.files.files.each { File file ->
+//                    javacAwbsXXXTask.outputs.files.files.each { File file ->
 //                        project.logger.error "file outputs=>${file.absolutePath}"
 //                    }
-//                    compileXXXJavaWithJavacTask.getTaskDependencies().getDependencies(compileXXXJavaWithJavacTask).each { Task task ->
+//                    javacAwbsXXXTask.getTaskDependencies().getDependencies(javacAwbsXXXTask).each { Task task ->
 //                        project.logger.error "TaskDependency=>${task.getName()}"
 //                    }
 //                }
 //
-                def javacAwbsXXXTask = project.tasks.findByName("javacAwbs${variant.name.capitalize()}")
-                if(javacAwbsXXXTask) {
-                    project.logger.error "javacAwbsXXXTask => ${javacAwbsXXXTask.name}"
-                    javacAwbsXXXTask.inputs.files.files.each { File file ->
-                        project.logger.error "file inputs=>${file.absolutePath}"
-                    }
-                    javacAwbsXXXTask.outputs.files.files.each { File file ->
-                        project.logger.error "file outputs=>${file.absolutePath}"
-                    }
-                    javacAwbsXXXTask.getTaskDependencies().getDependencies(javacAwbsXXXTask).each { Task task ->
-                        project.logger.error "TaskDependency=>${task.getName()}"
-                    }
-                }
-
-                def compileAwbXXXJavaWithJavacTask = project.tasks.findByName("compileAwb${variant.name.capitalize()}JavaWithJavac")
-                if(compileAwbXXXJavaWithJavacTask) {
-                    project.logger.error "compileAwbXXXJavaWithJavacTask => ${compileAwbXXXJavaWithJavacTask.name}"
-                    compileAwbXXXJavaWithJavacTask.inputs.files.files.each { File file ->
-                        project.logger.error "file inputs=>${file.absolutePath}"
-                    }
-                    compileAwbXXXJavaWithJavacTask.outputs.files.files.each { File file ->
-                        project.logger.error "file outputs=>${file.absolutePath}"
-                    }
-                    compileAwbXXXJavaWithJavacTask.getTaskDependencies().getDependencies(compileAwbXXXJavaWithJavacTask).each { Task task ->
-                        project.logger.error "TaskDependency=>${task.getName()}"
-                    }
-                }
-//
-//                def packageXXXAwbsTask = project.tasks.findByName("package${variant.name.capitalize()}Awbs")
-//                if(packageXXXAwbsTask) {
-//                    project.logger.error "packageXXXAwbsTask => ${packageXXXAwbsTask.name}"
-//                    packageXXXAwbsTask.inputs.files.files.each { File file ->
+//                def compileAwbXXXJavaWithJavacTask = project.tasks.findByName("compileAwb${variant.name.capitalize()}JavaWithJavac")
+//                if(compileAwbXXXJavaWithJavacTask) {
+//                    project.logger.error "compileAwbXXXJavaWithJavacTask => ${compileAwbXXXJavaWithJavacTask.name}"
+//                    compileAwbXXXJavaWithJavacTask.inputs.files.files.each { File file ->
 //                        project.logger.error "file inputs=>${file.absolutePath}"
 //                    }
-//                    packageXXXAwbsTask.outputs.files.files.each { File file ->
+//                    compileAwbXXXJavaWithJavacTask.outputs.files.files.each { File file ->
 //                        project.logger.error "file outputs=>${file.absolutePath}"
 //                    }
-//                    packageXXXAwbsTask.getTaskDependencies().getDependencies(packageXXXAwbsTask).each { Task task ->
+//                    compileAwbXXXJavaWithJavacTask.getTaskDependencies().getDependencies(compileAwbXXXJavaWithJavacTask).each { Task task ->
 //                        project.logger.error "TaskDependency=>${task.getName()}"
 //                    }
 //                }
-//
-//                def packageXXXTask = project.tasks.findByName("package${variant.name.capitalize()}")
-//                if(packageXXXTask) {
-//                    project.logger.error "packageXXXTask => ${packageXXXTask.name}"
-//                    packageXXXTask.inputs.files.files.each { File file ->
-//                        project.logger.error "file inputs=>${file.absolutePath}"
-//                    }
-//                    packageXXXTask.outputs.files.files.each { File file ->
-//                        project.logger.error "file outputs=>${file.absolutePath}"
-//                    }
-//                    packageXXXTask.getTaskDependencies().getDependencies(packageXXXTask).each { Task task ->
-//                        project.logger.error "TaskDependency=>${task.getName()}"
-//                    }
-//                }
-            }
+////
+////                def packageXXXAwbsTask = project.tasks.findByName("package${variant.name.capitalize()}Awbs")
+////                if(packageXXXAwbsTask) {
+////                    project.logger.error "packageXXXAwbsTask => ${packageXXXAwbsTask.name}"
+////                    packageXXXAwbsTask.inputs.files.files.each { File file ->
+////                        project.logger.error "file inputs=>${file.absolutePath}"
+////                    }
+////                    packageXXXAwbsTask.outputs.files.files.each { File file ->
+////                        project.logger.error "file outputs=>${file.absolutePath}"
+////                    }
+////                    packageXXXAwbsTask.getTaskDependencies().getDependencies(packageXXXAwbsTask).each { Task task ->
+////                        project.logger.error "TaskDependency=>${task.getName()}"
+////                    }
+////                }
+////
+////                def packageXXXTask = project.tasks.findByName("package${variant.name.capitalize()}")
+////                if(packageXXXTask) {
+////                    project.logger.error "packageXXXTask => ${packageXXXTask.name}"
+////                    packageXXXTask.inputs.files.files.each { File file ->
+////                        project.logger.error "file inputs=>${file.absolutePath}"
+////                    }
+////                    packageXXXTask.outputs.files.files.each { File file ->
+////                        project.logger.error "file outputs=>${file.absolutePath}"
+////                    }
+////                    packageXXXTask.getTaskDependencies().getDependencies(packageXXXTask).each { Task task ->
+////                        project.logger.error "TaskDependency=>${task.getName()}"
+////                    }
+////                }
+//            }
         }
     }
 
