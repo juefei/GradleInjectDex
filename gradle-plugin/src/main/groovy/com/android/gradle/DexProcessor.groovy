@@ -141,7 +141,7 @@ public class DexProcessor {
             }
         }
 
-        return path;
+        return "unknown:bundle";
     }
 
     public static void processJar(File inputJar, File outPutJar) {
@@ -394,7 +394,23 @@ public class DexProcessor {
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
         mw.visitVarInsn(Opcodes.ASTORE, 2);
         mw.visitFieldInsn(Opcodes.GETSTATIC, "com/android/gradle/TimeUtil", "startTimes", "Ljava/util/Map;");
+//        mw.visitVarInsn(Opcodes.ALOAD, 0);
+        mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
+        mw.visitInsn(Opcodes.DUP);
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
         mw.visitVarInsn(Opcodes.ALOAD, 0);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn("&");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Object");
         mw.visitVarInsn(Opcodes.ALOAD, 2);
         mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Object");
@@ -414,8 +430,23 @@ public class DexProcessor {
         mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
         mw.visitVarInsn(Opcodes.ASTORE, 2);
         mw.visitFieldInsn(Opcodes.GETSTATIC, "com/android/gradle/TimeUtil", "endTimes", "Ljava/util/Map;");
+//        mw.visitVarInsn(Opcodes.ALOAD, 0);
+        mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
+        mw.visitInsn(Opcodes.DUP);
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
         mw.visitVarInsn(Opcodes.ALOAD, 0);
-        mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Object");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn("&");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
         mw.visitVarInsn(Opcodes.ALOAD, 2);
         mw.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Object");
         mw.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Map", "put",
@@ -435,7 +466,7 @@ public class DexProcessor {
         mw.visitTryCatchBlock(lTryBlockStart, lTryBlockEnd, lHandler, "java/lang/Exception");
         mw.visitLabel(lTryBlockStart);
 
-        // String key = className + methodName + methodDesc;
+        // String key = className#methodName#methodDesc-threadName;
         mw.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
         mw.visitInsn(Opcodes.DUP);
         mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
@@ -452,6 +483,15 @@ public class DexProcessor {
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
                 false);
         mw.visitVarInsn(Opcodes.ALOAD, 2);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitLdcInsn("&");
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;",
+                false);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getName", "()Ljava/lang/String;",
+                false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
                 false);
         mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);

@@ -75,10 +75,10 @@ public class TransformPlugin implements Plugin<Project> {
         // 每个task都可以定义doFirst，doLast，用于定义在此task执行之前或之后执行的代码.
         project.afterEvaluate {
 
-//            project.android.applicationVariants.each { variant ->
-//
-//                def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
-//                if(injectMainDexTask) {
+            project.android.applicationVariants.each { variant ->
+
+                def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
+                if(injectMainDexTask) {
 //                    project.logger.error "injectMainDexTask => ${injectMainDexTask.name}"
 //
 //                    injectMainDexTask.inputs.files.files.each { File file ->
@@ -90,17 +90,17 @@ public class TransformPlugin implements Plugin<Project> {
 //                    injectMainDexTask.getTaskDependencies().getDependencies(injectMainDexTask).each { Task task ->
 //                        project.logger.error "TaskDependency=>${task.getName()}"
 //                    }
-//
-//                    if ("release".equalsIgnoreCase(variant.name)) {
-//                        injectMainDexTask.doLast {
-//                            def transformAwb = new TransformAwb(project, variant.name);
-//                            transformAwb.transform();
-//                        }
-//                    }
-//                }
-//
-//                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
-//                if (proguardTask) {
+
+                    if ("release".equalsIgnoreCase(variant.name)) {
+                        injectMainDexTask.doLast {
+                            def transformAwb = new TransformAwb(project, variant.name);
+                            transformAwb.transform();
+                        }
+                    }
+                }
+
+                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+                if (proguardTask) {
 //                    project.logger.error "proguardTask => ${proguardTask.name}"
 //
 //                    proguardTask.inputs.files.files.each { File file ->
@@ -112,15 +112,14 @@ public class TransformPlugin implements Plugin<Project> {
 //                    proguardTask.getTaskDependencies().getDependencies(proguardTask).each { Task task ->
 //                        project.logger.error "TaskDependency=>${task.getName()}"
 //                    }
-//
-//                    if ("debug".equalsIgnoreCase(variant.name)) {
-//                        proguardTask.doLast {
-//                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
-//                            transformAwbV2.transform();
-//                        }
-//                    }
-//
-//                }
+
+                    if ("debug".equalsIgnoreCase(variant.name)) {
+                        proguardTask.doLast {
+                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
+                            transformAwbV2.transform();
+                        }
+                    }
+                }
 //
 //                def dexTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
 //                if (dexTask) {
@@ -221,7 +220,7 @@ public class TransformPlugin implements Plugin<Project> {
 ////                        project.logger.error "TaskDependency=>${task.getName()}"
 ////                    }
 ////                }
-//            }
+            }
         }
     }
 
