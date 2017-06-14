@@ -2,6 +2,8 @@ package com.android.gradle
 
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.AppPlugin
+import com.android.build.gradle.api.ApkVariant
+import com.android.build.gradle.api.BaseVariantOutput
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 /**
@@ -75,22 +77,15 @@ public class TransformPlugin implements Plugin<Project> {
         // 每个task都可以定义doFirst，doLast，用于定义在此task执行之前或之后执行的代码.
         project.afterEvaluate {
 
-            project.android.applicationVariants.each { variant ->
+            project.android.applicationVariants.each { ApkVariant variant ->
+
+                project.logger.error "buildType = ${variant.name} " + "mappingFile => ${variant.getMappingFile()}"
+                variant.outputs.each { BaseVariantOutput output ->
+                    project.logger.error "outputFile => ${output.outputFile.absolutePath}"
+                }
 
                 def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
                 if(injectMainDexTask) {
-//                    project.logger.error "injectMainDexTask => ${injectMainDexTask.name}"
-//
-//                    injectMainDexTask.inputs.files.files.each { File file ->
-//                        project.logger.error "file inputs=>${file.absolutePath}"
-//                    }
-//                    injectMainDexTask.outputs.files.files.each { File file ->
-//                        project.logger.error "file outputs=>${file.absolutePath}"
-//                    }
-//                    injectMainDexTask.getTaskDependencies().getDependencies(injectMainDexTask).each { Task task ->
-//                        project.logger.error "TaskDependency=>${task.getName()}"
-//                    }
-
                     if ("release".equalsIgnoreCase(variant.name)) {
                         injectMainDexTask.doLast {
                             def transformAwb = new TransformAwb(project, variant.name);
@@ -101,18 +96,6 @@ public class TransformPlugin implements Plugin<Project> {
 
                 def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
                 if (proguardTask) {
-//                    project.logger.error "proguardTask => ${proguardTask.name}"
-//
-//                    proguardTask.inputs.files.files.each { File file ->
-//                        project.logger.error "file inputs=>${file.absolutePath}"
-//                    }
-//                    proguardTask.outputs.files.files.each { File file ->
-//                        project.logger.error "file outputs=>${file.absolutePath}"
-//                    }
-//                    proguardTask.getTaskDependencies().getDependencies(proguardTask).each { Task task ->
-//                        project.logger.error "TaskDependency=>${task.getName()}"
-//                    }
-
                     if ("debug".equalsIgnoreCase(variant.name)) {
                         proguardTask.doLast {
                             def transformAwbV2 = new TransformAwbV2(project, variant.name);
@@ -220,6 +203,39 @@ public class TransformPlugin implements Plugin<Project> {
 ////                        project.logger.error "TaskDependency=>${task.getName()}"
 ////                    }
 ////                }
+
+                // 自定义ProGuardTask
+//                task proguard(type: proguard.gradle.ProGuardTask, dependsOn: 'obfuscatedJar') {
+//                    // You should probably import a more compact ProGuard-style configuration
+//                    // file for all static settings, but we're specifying them all here, for
+//                    // the sake of the example.
+//                    configuration 'proguard.txt'
+//
+//                    // Specify the input jars, output jars, and library jars.
+//                    // We'll filter out the Ant classes, Gradle classes, keeping
+//                    // everything else.
+//                    injars "$buildDir/libs/aaa.jar"
+//                    injars "$buildDir/libs/bbb.jar"
+//                    outjars "$buildDir/libs/obfuscate/"
+//
+//                    libraryjars "${System.getProperty('java.home')}/lib/rt.jar"
+//
+//                    // Write out an obfuscation mapping file, for de-obfuscating any stack traces
+//                    // later on, or for incremental obfuscation of extensions.
+//
+//                    printmapping 'proguard.map'
+//
+//                    // keepparameternames
+//                    renamesourcefileattribute 'SourceFile'
+//                    keepattributes 'Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,EnclosingMethod'
+//
+//                    // Preserve all annotations.
+//                    keepattributes '*Annotation*'
+//
+//                    // Preserve the special static methods that are required in all enumeration
+//                    // classes.
+//                    keepclassmembers allowshrinking:true, 'enum * { public static **[] values(); public static ** valueOf(java.lang.String); }'
+//                }
             }
         }
     }
