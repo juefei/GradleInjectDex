@@ -305,12 +305,15 @@ public class DexProcessor {
                         mv.visitLdcInsn(key);
                         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/android/gradle/TimeUtil", "setEndTime",
                                 "(Ljava/lang/String;)V", false);
-                        mv.visitLdcInsn(bundleName + "@" + className);
-                        mv.visitLdcInsn(name);
-                        mv.visitLdcInsn(desc);
-                        //相当于com.android.test.TimeUtil.getCostTime("com/blueware/agent/TestTime","testTime");
-                        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/android/gradle/TimeUtil",
-                                "getCostTime", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
+
+                        if(dexExtension != null && dexExtension.debugEnabled) {
+                            mv.visitLdcInsn(bundleName + "@" + className);
+                            mv.visitLdcInsn(name);
+                            mv.visitLdcInsn(desc);
+                            //相当于com.android.test.TimeUtil.getCostTime("com/blueware/agent/TestTime","testTime");
+                            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/android/gradle/TimeUtil",
+                                    "getCostTime", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
+                        }
                     }
                 }
             };

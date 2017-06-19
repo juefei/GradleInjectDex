@@ -6,6 +6,8 @@ package com.android.gradle;
 
 public class DexExtension {
 
+    boolean debugEnabled = true;
+
     int thresholdInMainThread = 16;  // 16ms
 
     int thresholdInOtherThread = 500;  // 500ms
@@ -25,6 +27,7 @@ public class DexExtension {
     @Override
     public String toString() {
         return "DexExtension{" +
+                "debugEnabled=" + debugEnabled
                 "thresholdInMainThread=" + thresholdInMainThread +
                 ", thresholdInOtherThread=" + thresholdInOtherThread +
                 ", excludeClasses=" + excludeClasses +
