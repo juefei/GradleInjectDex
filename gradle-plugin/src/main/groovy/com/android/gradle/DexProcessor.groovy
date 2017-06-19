@@ -85,11 +85,12 @@ public class DexProcessor {
     }
 
     // xx/build/intermediates/exploded-awb/com.tmall.wireless/tmallandroid_weapp_bundle/1.0.2.10/jars/classes.jar
+    // xx/build/intermediates/awb-jaropt/com.taobao.android-taobao_dexmerge/1.0.2-opt.jar
     // xx/build/intermediates/classes-proguard/debug/com.taobao.android-taobao_dexmerge/obfuscated.jar
     public static boolean shouldprocessBundle(String jarName) {
         if(dexExtension != null && dexExtension.excludeBundles != null) {
             String formatJarName;
-            if(jarName.contains("classes-proguard")) {
+            if(jarName.contains("awb-jaropt") || jarName.contains("classes-proguard")) {
                 formatJarName = jarName.replace('-', '.');
             } else {
                 formatJarName = jarName.replace('/', '.');
@@ -107,7 +108,7 @@ public class DexProcessor {
     }
 
     private static String getBundleName(String path) {
-        if(path.contains("classes-proguard")) {
+        if(path.contains("awb-jaropt") || path.contains("classes-proguard")) {
             String[] targetArray = path.split("/");
             if(targetArray.length > 2) {
                 String target = targetArray[targetArray.length - 2];
@@ -141,7 +142,7 @@ public class DexProcessor {
             }
         }
 
-        return "unknown:bundle";
+        return "unknown:bundle:" + path;
     }
 
     public static void processJar(File inputJar, File outPutJar) {

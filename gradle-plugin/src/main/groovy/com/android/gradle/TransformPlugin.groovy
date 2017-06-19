@@ -3,7 +3,6 @@ package com.android.gradle
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.api.ApkVariant
-import com.android.build.gradle.api.BaseVariantOutput
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 /**
@@ -27,7 +26,11 @@ import org.gradle.api.Project
  *      |
  *      |
  *      V
- *  transformClassesWithHookDexForDebug （output：build/intermediates/transforms/HookDex/debug）
+ *  transformClassesWithInjectMainDexForDebug （output：build/intermediates/transforms/InjectMainDex/debug）
+ *      |
+ *      |
+ *      V
+ *  transformClassesWithJarOptForDebug (output: build/intermediates/transforms/jarOpt/debug, build/intermediates/awb-jaropt)
  *      |
  *      |
  *      V
@@ -79,30 +82,33 @@ public class TransformPlugin implements Plugin<Project> {
 
             project.android.applicationVariants.each { ApkVariant variant ->
 
-                project.logger.error "buildType = ${variant.name} " + "mappingFile => ${variant.getMappingFile()}"
-                variant.outputs.each { BaseVariantOutput output ->
-                    project.logger.error "outputFile => ${output.outputFile.absolutePath}"
-                }
-
                 def injectMainDexTask = project.tasks.findByName("transformClassesWithInjectMainDexFor${variant.name.capitalize()}")
                 if(injectMainDexTask) {
-                    if ("release".equalsIgnoreCase(variant.name)) {
-                        injectMainDexTask.doLast {
-                            def transformAwb = new TransformAwb(project, variant.name);
-                            transformAwb.transform();
-                        }
+//                    if ("release".equalsIgnoreCase(variant.name)) {
+//                        injectMainDexTask.doLast {
+//                            def transformAwb = new TransformAwb(project, variant.name);
+//                            transformAwb.transform();
+//                        }
+//                    }
+                }
+
+                def jarOptTask = project.tasks.findByName("transformClassesWithJarOptFor${variant.name.capitalize()}")
+                if(jarOptTask) {
+                    jarOptTask.doLast {
+                        def transformAwbV2 = new TransformAwbV2(project, variant.name);
+                        transformAwbV2.transform();
                     }
                 }
 
-                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
-                if (proguardTask) {
-                    if ("debug".equalsIgnoreCase(variant.name)) {
-                        proguardTask.doLast {
-                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
-                            transformAwbV2.transform();
-                        }
-                    }
-                }
+//                def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+//                if (proguardTask) {
+//                    if ("debug".equalsIgnoreCase(variant.name)) {
+//                        proguardTask.doLast {
+//                            def transformAwbV2 = new TransformAwbV2(project, variant.name);
+//                            transformAwbV2.transform();
+//                        }
+//                    }
+//                }
 //
 //                def dexTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
 //                if (dexTask) {
